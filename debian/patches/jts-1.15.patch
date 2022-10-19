@@ -1,0 +1,414 @@
+From: Bas Couwenberg <sebastic@debian.org>
+Date: Fri, 12 Nov 2021 22:37:58 +0100
+Subject: Update for JTS 1.15.
+
+---
+ pom.xml                                            |  6 ++--
+ .../core/context/jts/JtsSpatialContext.java        |  6 ++--
+ .../core/context/jts/JtsSpatialContextFactory.java | 12 +++----
+ .../com/spatial4j/core/io/jts/JtsBinaryCodec.java  | 16 ++++-----
+ .../core/io/jts/JtsWKTReaderShapeParser.java       | 18 +++++-----
+ .../spatial4j/core/io/jts/JtsWktShapeParser.java   | 20 +++++------
+ .../com/spatial4j/core/shape/jts/JtsGeometry.java  | 40 +++++++++++-----------
+ .../com/spatial4j/core/shape/jts/JtsPoint.java     | 10 +++---
+ .../com/spatial4j/core/io/JtsBinaryCodecTest.java  |  8 ++---
+ .../spatial4j/core/io/JtsWktShapeParserTest.java   |  4 +--
+ .../java/com/spatial4j/core/io/PolygonBuilder.java | 10 +++---
+ .../com/spatial4j/core/shape/JtsGeometryTest.java  |  8 ++---
+ 12 files changed, 79 insertions(+), 79 deletions(-)
+
+diff --git a/pom.xml b/pom.xml
+index e45e6d5..e269378 100644
+--- a/pom.xml
++++ b/pom.xml
+@@ -103,10 +103,10 @@
+ 
+     <!-- JTS is essentially only used for polygons. -->
+     <dependency>
+-      <groupId>com.vividsolutions</groupId>
+-      <artifactId>jts</artifactId>
++      <groupId>org.locationtech.jts</groupId>
++      <artifactId>jts-core</artifactId>
+       <!-- last I checked, it still works with 1.12 -->
+-      <version>1.13</version>
++      <version>1.15</version>
+       <optional>true</optional>
+       <exclusions>
+         <exclusion>
+diff --git a/src/main/java/com/spatial4j/core/context/jts/JtsSpatialContext.java b/src/main/java/com/spatial4j/core/context/jts/JtsSpatialContext.java
+index 08dba9a..6289dbb 100755
+--- a/src/main/java/com/spatial4j/core/context/jts/JtsSpatialContext.java
++++ b/src/main/java/com/spatial4j/core/context/jts/JtsSpatialContext.java
+@@ -25,8 +25,8 @@ import com.spatial4j.core.shape.Rectangle;
+ import com.spatial4j.core.shape.Shape;
+ import com.spatial4j.core.shape.jts.JtsGeometry;
+ import com.spatial4j.core.shape.jts.JtsPoint;
+-import com.vividsolutions.jts.geom.*;
+-import com.vividsolutions.jts.util.GeometricShapeFactory;
++import org.locationtech.jts.geom.*;
++import org.locationtech.jts.util.GeometricShapeFactory;
+ 
+ import java.util.ArrayList;
+ import java.util.Collection;
+@@ -190,7 +190,7 @@ public class JtsSpatialContext extends SpatialContext {
+ 
+   /**
+    * INTERNAL
+-   * @see #makeShape(com.vividsolutions.jts.geom.Geometry)
++   * @see #makeShape(org.locationtech.jts.geom.Geometry)
+    *
+    * @param geom Non-null
+    * @param dateline180Check if both this is true and {@link #isGeo()}, then JtsGeometry will check
+diff --git a/src/main/java/com/spatial4j/core/context/jts/JtsSpatialContextFactory.java b/src/main/java/com/spatial4j/core/context/jts/JtsSpatialContextFactory.java
+index 1c35d9b..95f1ad2 100644
+--- a/src/main/java/com/spatial4j/core/context/jts/JtsSpatialContextFactory.java
++++ b/src/main/java/com/spatial4j/core/context/jts/JtsSpatialContextFactory.java
+@@ -20,10 +20,10 @@ package com.spatial4j.core.context.jts;
+ import com.spatial4j.core.context.SpatialContextFactory;
+ import com.spatial4j.core.io.jts.JtsBinaryCodec;
+ import com.spatial4j.core.io.jts.JtsWktShapeParser;
+-import com.vividsolutions.jts.geom.CoordinateSequenceFactory;
+-import com.vividsolutions.jts.geom.GeometryFactory;
+-import com.vividsolutions.jts.geom.PrecisionModel;
+-import com.vividsolutions.jts.geom.impl.CoordinateArraySequenceFactory;
++import org.locationtech.jts.geom.CoordinateSequenceFactory;
++import org.locationtech.jts.geom.GeometryFactory;
++import org.locationtech.jts.geom.PrecisionModel;
++import org.locationtech.jts.geom.impl.CoordinateArraySequenceFactory;
+ 
+ import java.util.Map;
+ 
+@@ -45,9 +45,9 @@ import java.util.Map;
+  * <DD>true|false(default) -- see {@link JtsSpatialContext#isAllowMultiOverlap()}</DD>
+  * <DT>precisionModel</DT>
+  * <DD>floating(default) | floating_single | fixed
+- *  -- see {@link com.vividsolutions.jts.geom.PrecisionModel}.
++ *  -- see {@link org.locationtech.jts.geom.PrecisionModel}.
+  * If {@code fixed} then you must also provide {@code precisionScale}
+- *  -- see {@link com.vividsolutions.jts.geom.PrecisionModel#getScale()}</DD>
++ *  -- see {@link org.locationtech.jts.geom.PrecisionModel#getScale()}</DD>
+  * </DL>
+  */
+ public class JtsSpatialContextFactory extends SpatialContextFactory {
+diff --git a/src/main/java/com/spatial4j/core/io/jts/JtsBinaryCodec.java b/src/main/java/com/spatial4j/core/io/jts/JtsBinaryCodec.java
+index 6d4ee6f..7050c12 100644
+--- a/src/main/java/com/spatial4j/core/io/jts/JtsBinaryCodec.java
++++ b/src/main/java/com/spatial4j/core/io/jts/JtsBinaryCodec.java
+@@ -22,14 +22,14 @@ import com.spatial4j.core.context.jts.JtsSpatialContextFactory;
+ import com.spatial4j.core.exception.InvalidShapeException;
+ import com.spatial4j.core.io.BinaryCodec;
+ import com.spatial4j.core.shape.Shape;
+-import com.vividsolutions.jts.geom.Geometry;
+-import com.vividsolutions.jts.geom.PrecisionModel;
+-import com.vividsolutions.jts.io.InStream;
+-import com.vividsolutions.jts.io.OutStream;
+-import com.vividsolutions.jts.io.ParseException;
+-import com.vividsolutions.jts.io.WKBConstants;
+-import com.vividsolutions.jts.io.WKBReader;
+-import com.vividsolutions.jts.io.WKBWriter;
++import org.locationtech.jts.geom.Geometry;
++import org.locationtech.jts.geom.PrecisionModel;
++import org.locationtech.jts.io.InStream;
++import org.locationtech.jts.io.OutStream;
++import org.locationtech.jts.io.ParseException;
++import org.locationtech.jts.io.WKBConstants;
++import org.locationtech.jts.io.WKBReader;
++import org.locationtech.jts.io.WKBWriter;
+ 
+ import java.io.DataInput;
+ import java.io.DataOutput;
+diff --git a/src/main/java/com/spatial4j/core/io/jts/JtsWKTReaderShapeParser.java b/src/main/java/com/spatial4j/core/io/jts/JtsWKTReaderShapeParser.java
+index e5cf1dc..efc15d8 100644
+--- a/src/main/java/com/spatial4j/core/io/jts/JtsWKTReaderShapeParser.java
++++ b/src/main/java/com/spatial4j/core/io/jts/JtsWKTReaderShapeParser.java
+@@ -23,19 +23,19 @@ import com.spatial4j.core.distance.DistanceUtils;
+ import com.spatial4j.core.exception.InvalidShapeException;
+ import com.spatial4j.core.shape.Shape;
+ import com.spatial4j.core.shape.jts.JtsPoint;
+-import com.vividsolutions.jts.geom.CoordinateSequence;
+-import com.vividsolutions.jts.geom.CoordinateSequenceFilter;
+-import com.vividsolutions.jts.geom.Geometry;
+-import com.vividsolutions.jts.io.WKTReader;
++import org.locationtech.jts.geom.CoordinateSequence;
++import org.locationtech.jts.geom.CoordinateSequenceFilter;
++import org.locationtech.jts.geom.Geometry;
++import org.locationtech.jts.io.WKTReader;
+ 
+ import java.text.ParseException;
+ 
+ /**
+  * This is an extension of {@link JtsWktShapeParser} that processes the entire
+- * string with JTS's {@link com.vividsolutions.jts.io.WKTReader}.  Some differences:
++ * string with JTS's {@link org.locationtech.jts.io.WKTReader}.  Some differences:
+  * <ul>
+  *   <li>No support for ENVELOPE and BUFFER</li>
+- *   <li>MULTI* shapes use JTS's {@link com.vividsolutions.jts.geom.GeometryCollection} subclasses,
++ *   <li>MULTI* shapes use JTS's {@link org.locationtech.jts.geom.GeometryCollection} subclasses,
+  *   not {@link com.spatial4j.core.shape.ShapeCollection}</li>
+  *   <li>'Z' coordinates are saved into the geometry</li>
+  * </ul>
+@@ -55,7 +55,7 @@ public class JtsWKTReaderShapeParser extends JtsWktShapeParser {
+   }
+ 
+   /**
+-   * Reads WKT from the {@code str} via JTS's {@link com.vividsolutions.jts.io.WKTReader}.
++   * Reads WKT from the {@code str} via JTS's {@link org.locationtech.jts.io.WKTReader}.
+    * @param str
+    * @param reader <pre>new WKTReader(ctx.getGeometryFactory()))</pre>
+    * @return Non-Null
+@@ -67,8 +67,8 @@ public class JtsWKTReaderShapeParser extends JtsWktShapeParser {
+       //Normalizes & verifies coordinates
+       checkCoordinates(geom);
+ 
+-      if (geom instanceof com.vividsolutions.jts.geom.Point) {
+-        com.vividsolutions.jts.geom.Point ptGeom = (com.vividsolutions.jts.geom.Point) geom;
++      if (geom instanceof org.locationtech.jts.geom.Point) {
++        org.locationtech.jts.geom.Point ptGeom = (org.locationtech.jts.geom.Point) geom;
+         if (ctx.useJtsPoint())
+           return new JtsPoint(ptGeom, ctx);
+         else
+diff --git a/src/main/java/com/spatial4j/core/io/jts/JtsWktShapeParser.java b/src/main/java/com/spatial4j/core/io/jts/JtsWktShapeParser.java
+index 991350d..e07e2c3 100644
+--- a/src/main/java/com/spatial4j/core/io/jts/JtsWktShapeParser.java
++++ b/src/main/java/com/spatial4j/core/io/jts/JtsWktShapeParser.java
+@@ -24,13 +24,13 @@ import com.spatial4j.core.shape.Point;
+ import com.spatial4j.core.shape.Rectangle;
+ import com.spatial4j.core.shape.Shape;
+ import com.spatial4j.core.shape.jts.JtsGeometry;
+-import com.vividsolutions.jts.algorithm.CGAlgorithms;
+-import com.vividsolutions.jts.geom.Coordinate;
+-import com.vividsolutions.jts.geom.Envelope;
+-import com.vividsolutions.jts.geom.Geometry;
+-import com.vividsolutions.jts.geom.GeometryFactory;
+-import com.vividsolutions.jts.geom.LinearRing;
+-import com.vividsolutions.jts.geom.Polygon;
++import org.locationtech.jts.algorithm.CGAlgorithms;
++import org.locationtech.jts.geom.Coordinate;
++import org.locationtech.jts.geom.Envelope;
++import org.locationtech.jts.geom.Geometry;
++import org.locationtech.jts.geom.GeometryFactory;
++import org.locationtech.jts.geom.LinearRing;
++import org.locationtech.jts.geom.Polygon;
+ 
+ import java.text.ParseException;
+ import java.util.ArrayList;
+@@ -226,7 +226,7 @@ public class JtsWktShapeParser extends WktShapeParser {
+   }
+ 
+   /**
+-   * Reads a {@link com.vividsolutions.jts.geom.Coordinate} from the current position.
++   * Reads a {@link org.locationtech.jts.geom.Coordinate} from the current position.
+    * It's akin to {@link #point(com.spatial4j.core.io.WktShapeParser.State)} but for
+    * a JTS Coordinate.  Only the first 2 numbers are parsed; any remaining are ignored.
+    */
+@@ -298,7 +298,7 @@ public class JtsWktShapeParser extends WktShapeParser {
+     /** Geometries will not be validated (because it's kinda expensive to calculate). You may or may
+      * not ultimately get an error at some point; results are undefined. However, note that
+      * coordinates will still be validated for falling within the world boundaries.
+-     * @see com.vividsolutions.jts.geom.Geometry#isValid(). */
++     * @see org.locationtech.jts.geom.Geometry#isValid(). */
+     none,
+ 
+     /** Geometries will be explicitly validated on creation, possibly resulting in an exception:
+@@ -307,7 +307,7 @@ public class JtsWktShapeParser extends WktShapeParser {
+ 
+     /** Invalid Geometries are repaired by taking the convex hull. The result will very likely be a
+      * larger shape that matches false-positives, but no false-negatives.
+-     * See {@link com.vividsolutions.jts.geom.Geometry#convexHull()}. */
++     * See {@link org.locationtech.jts.geom.Geometry#convexHull()}. */
+     repairConvexHull,
+ 
+     /** Invalid polygons are repaired using the {@code buffer(0)} technique. From the <a
+diff --git a/src/main/java/com/spatial4j/core/shape/jts/JtsGeometry.java b/src/main/java/com/spatial4j/core/shape/jts/JtsGeometry.java
+index 6125937..1727694 100755
+--- a/src/main/java/com/spatial4j/core/shape/jts/JtsGeometry.java
++++ b/src/main/java/com/spatial4j/core/shape/jts/JtsGeometry.java
+@@ -29,23 +29,23 @@ import com.spatial4j.core.shape.impl.BufferedLineString;
+ import com.spatial4j.core.shape.impl.PointImpl;
+ import com.spatial4j.core.shape.impl.Range;
+ import com.spatial4j.core.shape.impl.RectangleImpl;
+-import com.vividsolutions.jts.geom.Coordinate;
+-import com.vividsolutions.jts.geom.CoordinateSequence;
+-import com.vividsolutions.jts.geom.CoordinateSequenceFilter;
+-import com.vividsolutions.jts.geom.Envelope;
+-import com.vividsolutions.jts.geom.Geometry;
+-import com.vividsolutions.jts.geom.GeometryCollection;
+-import com.vividsolutions.jts.geom.GeometryFilter;
+-import com.vividsolutions.jts.geom.IntersectionMatrix;
+-import com.vividsolutions.jts.geom.LineString;
+-import com.vividsolutions.jts.geom.Lineal;
+-import com.vividsolutions.jts.geom.LinearRing;
+-import com.vividsolutions.jts.geom.Polygon;
+-import com.vividsolutions.jts.geom.Puntal;
+-import com.vividsolutions.jts.geom.prep.PreparedGeometry;
+-import com.vividsolutions.jts.geom.prep.PreparedGeometryFactory;
+-import com.vividsolutions.jts.operation.union.UnaryUnionOp;
+-import com.vividsolutions.jts.operation.valid.IsValidOp;
++import org.locationtech.jts.geom.Coordinate;
++import org.locationtech.jts.geom.CoordinateSequence;
++import org.locationtech.jts.geom.CoordinateSequenceFilter;
++import org.locationtech.jts.geom.Envelope;
++import org.locationtech.jts.geom.Geometry;
++import org.locationtech.jts.geom.GeometryCollection;
++import org.locationtech.jts.geom.GeometryFilter;
++import org.locationtech.jts.geom.IntersectionMatrix;
++import org.locationtech.jts.geom.LineString;
++import org.locationtech.jts.geom.Lineal;
++import org.locationtech.jts.geom.LinearRing;
++import org.locationtech.jts.geom.Polygon;
++import org.locationtech.jts.geom.Puntal;
++import org.locationtech.jts.geom.prep.PreparedGeometry;
++import org.locationtech.jts.geom.prep.PreparedGeometryFactory;
++import org.locationtech.jts.operation.union.UnaryUnionOp;
++import org.locationtech.jts.operation.valid.IsValidOp;
+ 
+ import java.util.ArrayList;
+ import java.util.List;
+@@ -129,7 +129,7 @@ public class JtsGeometry implements Shape {
+ 
+   /**
+    * Adds an index to this class internally to compute spatial relations faster. In JTS this
+-   * is called a {@link com.vividsolutions.jts.geom.prep.PreparedGeometry}.  This
++   * is called a {@link org.locationtech.jts.geom.prep.PreparedGeometry}.  This
+    * isn't done by default because it takes some time to do the optimization, and it uses more
+    * memory.  Calling this method isn't thread-safe so be careful when this is done. If it was
+    * already indexed then nothing happens.
+@@ -276,7 +276,7 @@ public class JtsGeometry implements Shape {
+ 
+   protected SpatialRelation relate(Geometry oGeom) {
+     //see http://docs.geotools.org/latest/userguide/library/jts/dim9.html#preparedgeometry
+-    if (oGeom instanceof com.vividsolutions.jts.geom.Point) {
++    if (oGeom instanceof org.locationtech.jts.geom.Point) {
+       if (preparedGeometry != null)
+         return preparedGeometry.disjoint(oGeom) ? SpatialRelation.DISJOINT : SpatialRelation.CONTAINS;
+       return geom.disjoint(oGeom) ? SpatialRelation.DISJOINT : SpatialRelation.CONTAINS;
+@@ -331,7 +331,7 @@ public class JtsGeometry implements Shape {
+    * If <code>geom</code> spans the dateline, then this modifies it to be a
+    * valid JTS geometry that extends to the right of the standard -180 to +180
+    * width such that some points are greater than +180 but some remain less.
+-   * Takes care to invoke {@link com.vividsolutions.jts.geom.Geometry#geometryChanged()}
++   * Takes care to invoke {@link org.locationtech.jts.geom.Geometry#geometryChanged()}
+    * if needed.
+    *
+    * @return The number of times the geometry spans the dateline.  >= 0
+diff --git a/src/main/java/com/spatial4j/core/shape/jts/JtsPoint.java b/src/main/java/com/spatial4j/core/shape/jts/JtsPoint.java
+index 4c2bd7e..c8a6a5a 100644
+--- a/src/main/java/com/spatial4j/core/shape/jts/JtsPoint.java
++++ b/src/main/java/com/spatial4j/core/shape/jts/JtsPoint.java
+@@ -25,23 +25,23 @@ import com.spatial4j.core.shape.Rectangle;
+ import com.spatial4j.core.shape.Shape;
+ import com.spatial4j.core.shape.SpatialRelation;
+ import com.spatial4j.core.shape.impl.PointImpl;
+-import com.vividsolutions.jts.geom.CoordinateSequence;
++import org.locationtech.jts.geom.CoordinateSequence;
+ 
+-/** Wraps a {@link com.vividsolutions.jts.geom.Point}. */
++/** Wraps a {@link org.locationtech.jts.geom.Point}. */
+ public class JtsPoint implements Point {
+ 
+   private final SpatialContext ctx;
+-  private com.vividsolutions.jts.geom.Point pointGeom;
++  private org.locationtech.jts.geom.Point pointGeom;
+   private final boolean empty;//cached
+ 
+   /** A simple constructor without normalization / validation. */
+-  public JtsPoint(com.vividsolutions.jts.geom.Point pointGeom, SpatialContext ctx) {
++  public JtsPoint(org.locationtech.jts.geom.Point pointGeom, SpatialContext ctx) {
+     this.ctx = ctx;
+     this.pointGeom = pointGeom;
+     this.empty = pointGeom.isEmpty();
+   }
+ 
+-  public com.vividsolutions.jts.geom.Point getGeom() {
++  public org.locationtech.jts.geom.Point getGeom() {
+     return pointGeom;
+   }
+ 
+diff --git a/src/test/java/com/spatial4j/core/io/JtsBinaryCodecTest.java b/src/test/java/com/spatial4j/core/io/JtsBinaryCodecTest.java
+index d7d0c45..1d72a31 100644
+--- a/src/test/java/com/spatial4j/core/io/JtsBinaryCodecTest.java
++++ b/src/test/java/com/spatial4j/core/io/JtsBinaryCodecTest.java
+@@ -21,10 +21,10 @@ import com.carrotsearch.randomizedtesting.annotations.ParametersFactory;
+ import com.spatial4j.core.context.jts.JtsSpatialContext;
+ import com.spatial4j.core.context.jts.JtsSpatialContextFactory;
+ import com.spatial4j.core.shape.Shape;
+-import com.vividsolutions.jts.geom.Coordinate;
+-import com.vividsolutions.jts.geom.Geometry;
+-import com.vividsolutions.jts.geom.PrecisionModel;
+-import com.vividsolutions.jts.util.GeometricShapeFactory;
++import org.locationtech.jts.geom.Coordinate;
++import org.locationtech.jts.geom.Geometry;
++import org.locationtech.jts.geom.PrecisionModel;
++import org.locationtech.jts.util.GeometricShapeFactory;
+ import org.junit.Test;
+ 
+ import java.util.Arrays;
+diff --git a/src/test/java/com/spatial4j/core/io/JtsWktShapeParserTest.java b/src/test/java/com/spatial4j/core/io/JtsWktShapeParserTest.java
+index e8d0435..10fa16a 100644
+--- a/src/test/java/com/spatial4j/core/io/JtsWktShapeParserTest.java
++++ b/src/test/java/com/spatial4j/core/io/JtsWktShapeParserTest.java
+@@ -24,8 +24,8 @@ import com.spatial4j.core.shape.Rectangle;
+ import com.spatial4j.core.shape.Shape;
+ import com.spatial4j.core.shape.SpatialRelation;
+ import com.spatial4j.core.shape.jts.JtsGeometry;
+-import com.vividsolutions.jts.geom.Coordinate;
+-import com.vividsolutions.jts.geom.GeometryFactory;
++import org.locationtech.jts.geom.Coordinate;
++import org.locationtech.jts.geom.GeometryFactory;
+ import org.junit.Test;
+ 
+ import java.text.ParseException;
+diff --git a/src/test/java/com/spatial4j/core/io/PolygonBuilder.java b/src/test/java/com/spatial4j/core/io/PolygonBuilder.java
+index 7fa85cd..ade4df0 100644
+--- a/src/test/java/com/spatial4j/core/io/PolygonBuilder.java
++++ b/src/test/java/com/spatial4j/core/io/PolygonBuilder.java
+@@ -20,9 +20,9 @@ package com.spatial4j.core.io;
+ import com.spatial4j.core.context.jts.JtsSpatialContext;
+ import com.spatial4j.core.shape.Shape;
+ import com.spatial4j.core.shape.jts.JtsGeometry;
+-import com.vividsolutions.jts.geom.Coordinate;
+-import com.vividsolutions.jts.geom.LinearRing;
+-import com.vividsolutions.jts.geom.Polygon;
++import org.locationtech.jts.geom.Coordinate;
++import org.locationtech.jts.geom.LinearRing;
++import org.locationtech.jts.geom.Polygon;
+ 
+ import java.util.ArrayList;
+ import java.util.List;
+@@ -82,7 +82,7 @@ public class PolygonBuilder {
+   }
+ 
+   /**
+-   * Creates the raw {@link com.vividsolutions.jts.geom.Polygon}
++   * Creates the raw {@link org.locationtech.jts.geom.Polygon}
+    *
+    * @return Built polygon
+    */
+@@ -93,7 +93,7 @@ public class PolygonBuilder {
+   }
+ 
+   /**
+-   * Builder for defining a hole in a {@link com.vividsolutions.jts.geom.Polygon}
++   * Builder for defining a hole in a {@link org.locationtech.jts.geom.Polygon}
+    */
+   public class PolygonHoleBuilder {
+ 
+diff --git a/src/test/java/com/spatial4j/core/shape/JtsGeometryTest.java b/src/test/java/com/spatial4j/core/shape/JtsGeometryTest.java
+index 725e6bf..bf15ca6 100755
+--- a/src/test/java/com/spatial4j/core/shape/JtsGeometryTest.java
++++ b/src/test/java/com/spatial4j/core/shape/JtsGeometryTest.java
+@@ -24,10 +24,10 @@ import com.spatial4j.core.context.jts.JtsSpatialContextFactory;
+ import com.spatial4j.core.io.jts.JtsWktShapeParser;
+ import com.spatial4j.core.shape.impl.PointImpl;
+ import com.spatial4j.core.shape.jts.JtsGeometry;
+-import com.vividsolutions.jts.geom.Coordinate;
+-import com.vividsolutions.jts.geom.CoordinateFilter;
+-import com.vividsolutions.jts.geom.Geometry;
+-import com.vividsolutions.jts.geom.IntersectionMatrix;
++import org.locationtech.jts.geom.Coordinate;
++import org.locationtech.jts.geom.CoordinateFilter;
++import org.locationtech.jts.geom.Geometry;
++import org.locationtech.jts.geom.IntersectionMatrix;
+ import org.junit.Test;
+ 
+ import java.io.BufferedReader;

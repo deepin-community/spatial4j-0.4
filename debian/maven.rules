@@ -1,0 +1,4 @@
+
+com.spatial4j spatial4j * s/.*/0.4.x/ * *
+junit junit * s/.*/4.x/ * *
+s/com.vividsolutions/org.locationtech.jts/ s/jts/jts-core/ * s/.*/debian/ * *

@@ -1,0 +1,31 @@
+From: Markus Koschany <apo@debian.org>
+Date: Fri, 12 Nov 2021 22:39:56 +0100
+Subject: jts-18.1
+
+---
+ src/main/java/com/spatial4j/core/io/jts/JtsBinaryCodec.java | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/src/main/java/com/spatial4j/core/io/jts/JtsBinaryCodec.java b/src/main/java/com/spatial4j/core/io/jts/JtsBinaryCodec.java
+index 7050c12..d418259 100644
+--- a/src/main/java/com/spatial4j/core/io/jts/JtsBinaryCodec.java
++++ b/src/main/java/com/spatial4j/core/io/jts/JtsBinaryCodec.java
+@@ -94,15 +94,17 @@ public class JtsBinaryCodec extends BinaryCodec {
+       InStream inStream = new InStream() {//a strange JTS abstraction
+         boolean first = true;
+         @Override
+-        public void read(byte[] buf) throws IOException {
++        public int read(byte[] buf) throws IOException {
+           if (first) {//we don't write JTS's leading BOM so synthesize reading it
+             if (buf.length != 1)
+               throw new IllegalStateException("Expected initial read of one byte, not: " + buf.length);
+             buf[0] = WKBConstants.wkbXDR;//0
+             first = false;
++            return 1;
+           } else {
+             //TODO for performance, specialize for common array lengths: 1, 4, 8
+             dataInput.readFully(buf);
++            return buf.length;
+           }
+         }
+       };
